@@ -1,0 +1,8 @@
+{
+  "Version": "Watson Syslog Server v1.0.0",
+  "UdpPort": 514,
+  "DisplayTimestamps": true,
+  "LogFileDirectory": "C:\\temp\\logs\\",
+  "LogFilename": "log.txt",
+  "LogWriterIntervalSec": 10
+}

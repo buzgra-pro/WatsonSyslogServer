@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp2.2;net452</TargetFrameworks>
+    <TargetFrameworks>net452</TargetFrameworks>
     <Version>1.0.1</Version>
     <Authors>Joel Christner</Authors>
     <Company>Joel Christner</Company>
@@ -17,6 +17,8 @@
     <PackageLicenseUrl>https://github.com/jchristn/WatsonSyslogServer/blob/master/LICENSE.TXT</PackageLicenseUrl>
     <PackageIconUrl>https://raw.githubusercontent.com/jchristn/watsonsyslogserver/master/assets/logo.ico</PackageIconUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <StartupObject>WatsonSyslog.SyslogServer</StartupObject>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>

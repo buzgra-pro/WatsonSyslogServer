@@ -26,10 +26,10 @@ namespace WatsonSyslog
         static void Main(string[] args)
         {
             #region Read-Config-File
-
-            if (File.Exists("syslog.json"))
+            string filename = @"c:\temp\syslog.json";
+            if (File.Exists(filename))
             {
-                _SettingsContents = Encoding.UTF8.GetString(File.ReadAllBytes("syslog.json"));
+                _SettingsContents = Encoding.UTF8.GetString(File.ReadAllBytes(filename));
             } 
 
             if (String.IsNullOrEmpty(_SettingsContents))
