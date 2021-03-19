@@ -14,7 +14,7 @@ namespace SonicParser
 
         public string ConStr;
         public static SqlConnection SqlCon;
-        public static DataTable table = new DataTable();
+        public  DataTable Sonictable = new DataTable();
         public SqlCommand Cmd = new SqlCommand();
         public static long totRecs;
 
@@ -39,10 +39,29 @@ namespace SonicParser
         string pvtnatDst;
         string lastTagProcessed;
         string nextTag;
+        string pvtProto;
+        string pvtSent;
+        string pvtRcvd;
+        string pvtsPkt;
+        string pvtrPkt;
+        string pvtcDur;
+        string pvtxRule;
+        string pvtApp;
+        string pvtAppName;
+        string pvtSid;
+        string pvtIpscat;
+        string pvtTagN;
+        string pvtVpnPolicy;
+        Boolean seekingLastTag; 
+
+
         int TagCount;
         ListBox Lbi;
-
-
+        string[] Cols = { "sn", "fw","pri","c","gcat","m","msg",
+            "srcMac","natSrc","src","srcZone", "dstMac" ,"dst",
+            "dstZone","natDst","proto","sent","rcvd","spkt","rpkt","cdur","rule"
+         ,"vpnpolicy","note","app","appName","n"};
+       
         public SonicWall(string[] lines, ListBox LB)
         {
             int num = 1;
@@ -51,37 +70,16 @@ namespace SonicParser
             Lbi = LB;
             foreach (string line in lines)
             {
-
                 currentLine = line;
                 TestDate(currentLine);
                 TestTAG(currentLine);
-                TestSN(currentLine);
-                nextTag = getTagName(currentLine);
-                TestFW(currentLine);
-                nextTag = getTagName(currentLine);
-                TestPri(currentLine);
-                nextTag = getTagName(currentLine);
-                TestC(currentLine);
-                nextTag = getTagName(currentLine);
-                TestgCat(currentLine);
-                nextTag = getTagName(currentLine);
-                TestM(currentLine);
-                nextTag = getTagName(currentLine);
-                TestMsg(currentLine);
-                nextTag = getTagName(currentLine);
-
-                while (TagCount < 10)
+             foreach (string col in Cols)
                 {
-                    nextTag = getTagName(currentLine);
-                    processNextTag(nextTag);
-                    TagCount++;
+                    processNextTag(col);
 
                 }
-
-                
-                //
-                DoInsertToDataTable(table);
-                Console.WriteLine(num + " : " + currentLine); num++;
+                DoInsertToDataTable();
+                num++;
             }
 
 
@@ -93,7 +91,28 @@ namespace SonicParser
         {
             switch (Tag)
             {
+                case "sn":
+                    TestSN(currentLine);
+                    break;
+                case "fw":
+                    TestFW(currentLine);
+                    break;
+                case "pri":
+                    TestPri(currentLine);
+                    break;
+                case "c":
+                    TestC(currentLine);
+                    break;
+                case "gcat":
+                    TestgCat(currentLine);
+                    break;
 
+                case "m":
+                    TestM(currentLine);
+                    break;
+                case "msg":
+                    TestMsg(currentLine);
+                    break;
                 case "srcMac":
 
                     TestSRC(currentLine);
@@ -119,6 +138,41 @@ namespace SonicParser
 
                 case "natDst":
                     TestDestZone(currentLine);
+                    break;
+                case "proto":
+                    Testproto(currentLine);
+                    break;
+                case "sent":
+                    TestSent(currentLine);
+                    break;
+                case "rcvd":
+                    TestRcvd(currentLine);
+                    break;
+                case "spkt":
+                    TestSpkt(currentLine);
+                    break;
+                case "rpkt":
+                    TestRpkt(currentLine);
+                    break;
+                case "cdur":
+                    TestCdur(currentLine);
+                    break;
+                case "rule":
+                    TestxRule(currentLine);
+                    break;
+                case "vpnpolicy":
+                    TestVpnPolicy(currentLine);
+                    break;
+                case "note":
+                    break;
+                case "app":
+                    TestApp(currentLine);
+                    break;
+                case "appName":
+                    TestAppName(currentLine);
+                    break;
+                case "n":
+                    TestNTag(currentLine);
                     break;
 
                 default:
@@ -155,68 +209,114 @@ namespace SonicParser
             SqlCon.ConnectionString = "Data Source=IT-2020-GS\\SQL2019;Initial Catalog=FileAnalysis;Integrated Security=True";
             SqlCon.Open();
 
-            Cmd.Connection = SqlCon;
-            Cmd.CommandType = CommandType.StoredProcedure;
-            //       Cmd.CommandText = "CreateFileList";
-            //       Cmd.ExecuteNonQuery();
-            table.Columns.Clear();
-
-            //    sDateTime, Tag, SN, FW, Pri, pvtC, Cat, pvtM, Msg, SrcMac, 
-            //                         SrcIP, SrcZone, natSrc, DestMac, DestZone, DestIP, natDst)
-
-            // Create four typed columns in the DataTable.
-            table.Columns.Add("RecordNumber", typeof(long));
-            table.Columns.Add("sDateTime", typeof(string));
-            table.Columns.Add("Tag", typeof(string));
-            table.Columns.Add("SN", typeof(string));
-            table.Columns.Add("FW", typeof(string));
-            table.Columns.Add("Pri", typeof(string));
-            table.Columns.Add("pvtC", typeof(string));
-            table.Columns.Add("Cat", typeof(string));
-            table.Columns.Add("pvtM", typeof(string));
-            table.Columns.Add("Msg", typeof(string));
-            table.Columns.Add("SrcMac", typeof(string));
-            table.Columns.Add("SrcIP", typeof(string));
-            table.Columns.Add("SrcZone", typeof(string));
-            table.Columns.Add("natSrc", typeof(string));
-            table.Columns.Add("DestMac", typeof(string));
-            table.Columns.Add("DestZone", typeof(string));
-            table.Columns.Add("DestIP", typeof(string));
-            table.Columns.Add("natDst", typeof(string));
+            //Cmd.Connection = SqlCon;
+            //Cmd.CommandType = CommandType.StoredProcedure;
+            Sonictable.Columns.Clear();
+            Sonictable.Columns.Add("RecordNumber", typeof(long));
+            Sonictable.Columns.Add("sDateTime", typeof(string));
+            Sonictable.Columns.Add("Tag", typeof(string));
+            Sonictable.Columns.Add("SN", typeof(string));
+            Sonictable.Columns.Add("FW", typeof(string));
+            Sonictable.Columns.Add("Pri", typeof(string));
+            Sonictable.Columns.Add("pvtC", typeof(string));
+            Sonictable.Columns.Add("Cat", typeof(string));
+            Sonictable.Columns.Add("pvtM", typeof(string));
+            Sonictable.Columns.Add("Msg", typeof(string));
+            Sonictable.Columns.Add("SrcMac", typeof(string));
+            Sonictable.Columns.Add("SrcIP", typeof(string));
+            Sonictable.Columns.Add("SrcZone", typeof(string));
+            Sonictable.Columns.Add("natSrc", typeof(string));
+            Sonictable.Columns.Add("DestMac", typeof(string));
+            Sonictable.Columns.Add("DestZone", typeof(string));
+            Sonictable.Columns.Add("DestIP", typeof(string));
+            Sonictable.Columns.Add("natDst", typeof(string));
+            Sonictable.Columns.Add("proto", typeof(string));
+            Sonictable.Columns.Add("sent", typeof(string));
+            Sonictable.Columns.Add("rcvd", typeof(string));
+            Sonictable.Columns.Add("spkt", typeof(string));
+            Sonictable.Columns.Add("rpkt", typeof(string));
+            Sonictable.Columns.Add("cdur", typeof(string));
+            Sonictable.Columns.Add("xrule", typeof(string));
+            Sonictable.Columns.Add("app", typeof(string));
+            Sonictable.Columns.Add("appName", typeof(string));
+            Sonictable.Columns.Add("sid", typeof(string));
+            Sonictable.Columns.Add("ipscat", typeof(string));
+            Sonictable.Columns.Add("tagN", typeof(string));
 
         }
 
-
-        public void DoBulkInsert()
+        public void DoInsertToDataTable()
         {
-            SqlBulkCopy bulkCopy = new SqlBulkCopy(SqlCon);
-            bulkCopy.DestinationTableName = "dbo.FileList";
-            bulkCopy.WriteToServer(table);
-        }
-
-
-
-        public void DoInsertToDataTable(DataTable table)
-        {
-            long recsDone = table.Rows.Count;
-            long isAstep = recsDone % 100000;
+            long recsDone = Sonictable.Rows.Count;
+            long isAstep = recsDone % 1000;
             totRecs++;
             if ((isAstep == 0) && (recsDone > 0))
             {
-                DoBulkInsert();
-                table.Clear();
+                Application.DoEvents();
+                DoBulkInsert(Sonictable);
+                Sonictable.Clear();
 
             }
+            DataRow row;
+            row = Sonictable.NewRow();
+            row["RecordNumber"] =totRecs;
+            row["sDateTime"] = pvtDateTime;
+            row["Tag"] = pvtTag;
+            row["SN"] = pvtSN;
+            row["FW"] = pvtFW;
+            row["Pri"] = pvtPri;
+            row["pvtC"] = pvtC;
+            row["Cat"] = pvtgCat;
+            row["pvtM"] = pvtM;
+            row["Msg"] = pvtMsg;
+            row["SrcMac"] = pvtSrcMAC;
+            row["SrcIP"] = pvtSrcIP;
+            row["SrcZone"] = pvtSrcZone;
+            row["natSrc"] = pvtnatSrc;
+            row["DestMac"] = pvtDestMac;
+            row["DestZone"] = pvtDestZone;
+            row["DestIP"] = pvtDestIP;
+            row["natDst"] = pvtnatDst;
+            row["proto"] =pvtProto;
+            row["sent"] =pvtSent;
+            row["rcvd"] =pvtRcvd;
+            row["spkt"] =pvtsPkt;
+            row["rpkt"] =pvtrPkt;
+            row["cdur"] =pvtcDur;
+            row["xrule"] =pvtxRule;
+            row["app"] =pvtApp;
+            row["appName"] =pvtAppName;
+            row["sid"] =pvtSid;
+            row["ipscat"] =pvtIpscat;
+            row["tagN"] = pvtTagN;
+            Sonictable.Rows.Add(row);
 
-            table.Rows.Add(totRecs, pvtDateTime, pvtTag, pvtSN, pvtFW, pvtPri,
-                pvtC, pvtgCat, pvtM, pvtMsg, pvtSrcMAC, pvtSrcIP, pvtSrcZone, pvtnatSrc, pvtDestMac, pvtDestZone, pvtDestIP, pvtnatDst);
+            //table.Rows.Add(totRecs, pvtDateTime, pvtTag, pvtSN, pvtFW, pvtPri,
+              //  pvtC, pvtgCat, pvtM, pvtMsg, pvtSrcMAC, pvtSrcIP, pvtSrcZone, pvtnatSrc, pvtDestMac, pvtDestZone, pvtDestIP, pvtnatDst);
 
         }
 
 
 
 
-
+        public void DoBulkInsert(DataTable table)
+        {
+            SqlBulkCopy bulkCopy = new SqlBulkCopy(SqlCon);
+            bulkCopy.DestinationTableName = "dbo.SonicLog";
+            try
+            {
+                bulkCopy.WriteToServer(table);
+            }
+            catch (Exception ex)
+            {
+                Lbi.Items.Add(ex.Message);
+                throw;
+            }
+         
+        
+        
+        
+        }
 
 
 
@@ -226,7 +326,7 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<dateTime>[\d]{2}\x2F[\d]{2}\x2F[\d]{4}\x20[\d]{2}:[\d]{2}:[\d]{2})", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<dateTime>[\d]{2}\x2F[\d]{2}\x2F[\d]{4}\x20[\d]{2}:[\d]{2}:[\d]{2})", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtDateTime = matchResults.Groups["dateTime"].Value;
@@ -249,7 +349,7 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<tag><[\d]{1,3}>)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<tag><[\d]{1,3}>)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtTag = matchResults.Groups["tag"].Value;
@@ -272,12 +372,12 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<SN>sn=[^\x20]{12})", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<SN>sn=[^\x20]{12})", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtSN = matchResults.Groups["SN"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtSN.Length + 1);
+              //      int index = matchResults.Index;
+                //    currentLine = BodyText.Substring(index + pvtSN.Length + 1);
                     lastTagProcessed = "sn=";
                 }
                 else
@@ -296,12 +396,12 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<FW>fw=(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}))", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<FW>fw=(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}))", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtFW = matchResults.Groups["FW"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtFW.Length + 1);
+           //         int index = matchResults.Index;
+            //        currentLine = BodyText.Substring(index + pvtFW.Length + 1);
                     lastTagProcessed = "fw=";
                 }
                 else
@@ -320,12 +420,12 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<pri>pri=[\d])", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<pri>pri=[\d])", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtPri = matchResults.Groups["pri"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtPri.Length + 1);
+            //        int index = matchResults.Index;
+             ///       currentLine = BodyText.Substring(index + pvtPri.Length + 1);
                     lastTagProcessed = "pri=";
                 }
                 else
@@ -344,12 +444,12 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\Ac=[\d]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"[\x20]c=(?<cat>[^\x20]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtC = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtC.Length + 1);
+                   // int index = matchResults.Index;
+                   // currentLine = BodyText.Substring(index + pvtC.Length + 1);
                     lastTagProcessed = "c=";
                 }
                 else
@@ -368,12 +468,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\Agcat=[\d]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>gcat=[\d]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtgCat = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtgCat.Length + 1);
                 }
                 else
                 {
@@ -391,12 +489,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\Am=[\d]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>m=[\d]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtM = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtM.Length + 1);
                     lastTagProcessed = "m=";
                 }
                 else
@@ -415,12 +511,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\Amsg=\x22[^\x22]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>msg=\x22[^\x22]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtMsg = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtMsg.Length + 2);
                     lastTagProcessed = "msg=";
                 }
                 else
@@ -439,23 +533,19 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\AsrcMac=[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>srcMac=[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtSrcMAC = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtSrcMAC.Length + 1);
                     lastTagProcessed = "srcMac=";
                 }
                 else
                 {
                     // Match attempt failed
-                    matchResults = Regex.Match(BodyText, @"src=(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                    matchResults = Regex.Match(BodyText, @"src=(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase );
                     if (matchResults.Success)
                     {
                         pvtSrcIP = matchResults.Groups["cat"].Value;
-                        int index = matchResults.Index;
-                        currentLine = BodyText.Substring(index + pvtSrcIP.Length + 5);
                         lastTagProcessed = "src=";
                     }
 
@@ -468,17 +558,16 @@ namespace SonicParser
             }
 
         }
+
         private void TestSrcZone(string BodyText)
         {
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\AsrcZone=[^\x20]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>srcZone=[^\x20]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtSrcZone = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtSrcZone.Length + 1);
                     lastTagProcessed = "srcZone=";
                 }
                 else
@@ -497,12 +586,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtnatSrc = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtnatSrc.Length + 1);
                 }
                 else
                 {
@@ -520,12 +607,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\AdstMac=[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>dstMac=[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+:[a-f0-9]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtDestMac = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtDestMac.Length + 1);
                     lastTagProcessed = "dstMac=";
                 }
                 else
@@ -546,12 +631,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"dst=(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"dst=(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtDestIP = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtDestIP.Length + 5);
                     lastTagProcessed = "dst=";
                 }
                 else
@@ -571,12 +654,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"(?<cat>\AdstZone=[^\x20]+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"(?<cat>dstZone=[^\x20]+)", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtDestZone = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtDestZone.Length + 1);
                     lastTagProcessed = "dstZone=";
                 }
                 else
@@ -595,12 +676,10 @@ namespace SonicParser
             Match matchResults = null;
             try
             {
-                matchResults = Regex.Match(BodyText, @"natDst=(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                matchResults = Regex.Match(BodyText, @"natDst=(?<cat>(?<Oct1>[\d]{1,3})\.(?<Oct2>[\d]{1,3})\.(?<Oct3>[\d]{1,3})\.(?<Oct4>[\d]{1,3}):(?<Port>[^\x20]+))", RegexOptions.IgnoreCase );
                 if (matchResults.Success)
                 {
                     pvtnatDst = matchResults.Groups["cat"].Value;
-                    int index = matchResults.Index;
-                    currentLine = BodyText.Substring(index + pvtnatDst.Length + 7);
                     lastTagProcessed = "natDst=";
                 }
                 else
@@ -615,8 +694,263 @@ namespace SonicParser
             }
 
         }
+        private void Testproto(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
 
+                matchResults = Regex.Match(BodyText, @"(?<cat>proto=[^\x20]{0,16})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtProto = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "proto=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
 
+        }
+        private void TestSent(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>sent=[^\x20]{0,16})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtSent = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "sent=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestRcvd(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>rcvd=[^\x20]{0,16})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtRcvd = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "rcvd=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestSpkt(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>spkt=[^\x20]{0,10})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtsPkt = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "spkt=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestRpkt(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>rpkt=[^\x20]{0,10})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtrPkt = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "rpkt=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestCdur(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>cdur=[^\x20]{0,10})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtcDur = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "cdur=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestxRule(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>rule=[^\x20]+[\d]{1,3}\x20[^\x22]+)", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtxRule = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "rule=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestApp(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>app=[^\x20]{0,10})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtApp = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "app=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+        private void TestAppName(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>appName=[^\x20]{0,50})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtAppName = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "appName";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+
+        private void TestNTag(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>\x20n=(?<Record>[\d]+))", RegexOptions.IgnoreCase);
+                if (matchResults.Success)
+                {
+                    pvtTagN = matchResults.Groups["Record"].Value;
+                    lastTagProcessed = "n";
+                    seekingLastTag = false;
+
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
+
+        private void TestVpnPolicy(string BodyText)
+        {
+            Match matchResults = null;
+            try
+            {
+
+                matchResults = Regex.Match(BodyText, @"(?<cat>vpnpolicy=[^\x20]{0,30})", RegexOptions.IgnoreCase );
+                if (matchResults.Success)
+                {
+                    pvtVpnPolicy = matchResults.Groups["cat"].Value;
+                    lastTagProcessed = "vpnpolicy=";
+                }
+                else
+                {
+                    // Match attempt failed
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Syntax error in the regular expression
+            }
+
+        }
 
     }
 }
