@@ -34,6 +34,7 @@ namespace SonicParser
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.LB = new System.Windows.Forms.ListBox();
+            this.dNSForIPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -55,7 +56,8 @@ namespace SonicParser
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.openToolStripMenuItem});
+            this.openToolStripMenuItem,
+            this.dNSForIPToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
@@ -74,6 +76,13 @@ namespace SonicParser
             this.LB.Name = "LB";
             this.LB.Size = new System.Drawing.Size(739, 394);
             this.LB.TabIndex = 1;
+            // 
+            // dNSForIPToolStripMenuItem
+            // 
+            this.dNSForIPToolStripMenuItem.Name = "dNSForIPToolStripMenuItem";
+            this.dNSForIPToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.dNSForIPToolStripMenuItem.Text = "DNS For IP";
+            this.dNSForIPToolStripMenuItem.Click += new System.EventHandler(this.dNSForIPToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -99,6 +108,7 @@ namespace SonicParser
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ListBox LB;
+        private System.Windows.Forms.ToolStripMenuItem dNSForIPToolStripMenuItem;
     }
 }
 

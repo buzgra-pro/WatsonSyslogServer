@@ -17,7 +17,7 @@ namespace SonicParser
         public  DataTable Sonictable = new DataTable();
         public SqlCommand Cmd = new SqlCommand();
         public static long totRecs;
-
+        public int BulkInsertBlockSize;
 
         string currentLine;
         string pvtDateTime;
@@ -66,7 +66,10 @@ namespace SonicParser
         {
             int num = 1;
             //Im the constructor
+            BulkInsertBlockSize = 1000;
             Connectdb();
+            totRecs = GetLastRecord(SqlCon.ConnectionString, "SELECT MAX(RecordNumber) AS MaxRec FROM SonicLog") + 1;
+
             Lbi = LB;
             foreach (string line in lines)
             {
@@ -78,7 +81,7 @@ namespace SonicParser
                     processNextTag(col);
 
                 }
-                DoInsertToDataTable();
+                DoInsertToDataTable(lines.Length);
                 num++;
             }
 
@@ -192,6 +195,43 @@ namespace SonicParser
 
         }
 
+        Int32 GetLastRecord(string ConnectionStr, string Cmd)
+        {
+
+            SqlCommand CmdDat = new SqlCommand();
+            SqlConnection Con;
+
+            Con = null;
+            try
+            {
+                Con = new SqlConnection();
+                Con.ConnectionString = ConnectionStr;
+
+                Con.Open();
+                CmdDat.Connection = Con;
+                CmdDat.CommandText = Cmd;
+                CmdDat.CommandType = CommandType.Text;
+
+                return Convert.ToInt32(CmdDat.ExecuteScalar());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.Print(ex.Message);
+                return 0;
+
+            }
+            finally
+            {
+                if ((Con != null))
+                {
+                    Con.Close();
+                    Con.Dispose();
+                }
+            }
+
+
+        }
+
 
 
         public void Connectdb()
@@ -206,7 +246,9 @@ namespace SonicParser
             // Debug.Print NavCon.ConnectionString
             //AdoCon.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + txDB.Text
             //AdoCon.ConnectionString = "Provider=SQLNCLI11.1;Data Source=IT-2014-W8\SQL2014;Initial Catalog=Files;Integrated Security=True"
-            SqlCon.ConnectionString = "Data Source=IT-2020-GS\\SQL2019;Initial Catalog=FileAnalysis;Integrated Security=True";
+            //SqlCon.ConnectionString = "Data Source=IT-2020-GS\\SQL2019;Initial Catalog=FileAnalysis;Integrated Security=True";
+            SqlCon.ConnectionString = "Data Source=localhost\\SQL2019;Initial Catalog=FileAnalysis;Integrated Security=True";
+
             SqlCon.Open();
 
             //Cmd.Connection = SqlCon;
@@ -245,18 +287,26 @@ namespace SonicParser
 
         }
 
-        public void DoInsertToDataTable()
+        public void DoInsertToDataTable(int totLinesToDo)
         {
-            long recsDone = Sonictable.Rows.Count;
-            long isAstep = recsDone % 1000;
+            long recSoFar = Sonictable.Rows.Count;
+            long isAstep = recSoFar % BulkInsertBlockSize; //a block of 1000
             totRecs++;
-            if ((isAstep == 0) && (recsDone > 0))
+            long Remaining = totLinesToDo - totRecs;
+
+            if ((isAstep == 0) && (recSoFar > 0)) //is this a BulkBlock
             {
                 Application.DoEvents();
-                DoBulkInsert(Sonictable);
+                DoBulkInsert(Sonictable); //
                 Sonictable.Clear();
-
             }
+
+            else { if (Remaining <=BulkInsertBlockSize) { DoBulkInsert(Sonictable); } }
+
+
+
+
+       
             DataRow row;
             row = Sonictable.NewRow();
             row["RecordNumber"] =totRecs;
